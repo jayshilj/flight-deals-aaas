@@ -1,0 +1,24 @@
+flight-aaas/
+│
+├── 📁 .antigravity/
+│   └── 📄 agent.config.json       ← tells Antigravity what your agent does
+│
+├── 📁 .github/
+│   └── 📁 workflows/
+│       └── 📄 ci.yml              ← auto-tests when you push to GitHub
+│
+├── 📁 app/
+│   ├── 📄 main.py                 ← your FastAPI web server
+│   ├── 📄 agent.py                ← the AI brain
+│   └── 📁 tools/
+│       └── 📄 flight_search.py    ← calls Amadeus API for flights
+│
+├── 📁 tests/
+│   └── 📄 test_agent.py           ← basic tests
+│
+├── 📄 Dockerfile                  ← packages your app
+├── 📄 requirements.txt            ← your Python dependencies
+├── 📄 .env                        ← your secret API keys (NEVER share this)
+├── 📄 .env.example                ← safe template to share on GitHub
+├── 📄 .gitignore                  ← tells Git to ignore .env
+└── 📄 README.md                   ← description of your project
