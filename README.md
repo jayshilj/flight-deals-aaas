@@ -1,10 +1,12 @@
-flight-aaas/
+flight-deals-aaas/
 ├── app/
-│   ├── main.py           ← FastAPI backend (already done ✅)
-│   ├── agent.py          ← LangChain agent (already done ✅)
-│   ├── ui.py             ← NEW: Streamlit frontend ✨
-│   └── tools/
-│       └── flight_search.py
-├── .env
-├── requirements.txt
-└── ...
+│ ├── main.py # FastAPI backend
+│ ├── agent.py # LangChain AI agent
+│ ├── ui.py # Streamlit frontend
+│ └── tools/
+│ └── flight_search.py # SerpApi flight tool
+├── tests/
+├── .streamlit/config.toml # UI theme
+├── .github/workflows/ci.yml # CI/CD
+├── Dockerfile
+└── requirements.txt
