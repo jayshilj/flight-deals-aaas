@@ -26,7 +26,7 @@ st.markdown("""
 
     .flight-card {
         background: #ffffff;
-        border: 1.5px solid #e0e8ff;
+        border: 1.5 solid #e0e8ff;
         border-radius: 14px;
         padding: 18px 22px;
         margin: 10px 0;
@@ -72,7 +72,31 @@ st.markdown("""
 # ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## ✈ Flight Deals Agent")
-    st.caption("Powered by Google Flights + Gemini AI")
+    st.caption("AI-Powered Global Flight Search")
+    st.divider()
+
+    # --- Model Settings ---
+    st.markdown("### ⚙️ Model Settings")
+    provider = st.selectbox(
+        "Select Provider",
+        ["Google", "Perplexity", "OpenAI", "Anthropic"],
+        index=0
+    )
+    
+    # Default models for each provider
+    default_models = {
+        "Google": "gemini-1.5-flash",
+        "Perplexity": "sonar",
+        "OpenAI": "gpt-4o-mini",
+        "Anthropic": "claude-3-5-sonnet-latest"
+    }
+    
+    model_name = st.text_input("Model Name", value=default_models.get(provider, ""))
+    user_api_key = st.text_input(f"{provider} API Key", type="password", placeholder=f"Enter {provider} API Key...")
+    
+    if not user_api_key:
+        st.info(f"💡 Using server {provider} key if set.")
+    
     st.divider()
 
     st.markdown("### 💡 Try These Queries")
@@ -98,13 +122,13 @@ with st.sidebar:
             st.session_state.quick_query = query
 
     st.divider()
-    st.caption("🔒 API keys stored locally in `.env`")
+    st.caption("🔒 API keys entered here are NOT stored.")
 
 # ── Header ────────────────────────────────────────────────────
 st.markdown("""
 <div class='header-box'>
     <h1>✈ Flight Deals Agent</h1>
-    <p>Ask me to find the best flights for any route — powered by real Google Flights data</p>
+    <p>Ask me to find the best flights — now with Guardrail Agent verification</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -123,17 +147,22 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # ── API Call Helper ───────────────────────────────────────────
-def call_agent(query: str) -> str:
+def call_agent(query: str, provider: str, model_name: str, api_key: str) -> str:
     try:
+        payload = {
+            "query": query,
+            "provider": provider,
+            "model_name": model_name,
+            "api_key": api_key if api_key else None
+        }
         resp = requests.post(
             "http://127.0.0.1:8000/ask",
-            json={"query": query},
-            timeout=60
+            json=payload,
+            timeout=120 # Increased timeout for dual-agent processing
         )
         resp.raise_for_status()
         data = resp.json()
 
-        # Handle all possible response shapes
         if "response" in data and data["response"]:
             return data["response"]
         elif "detail" in data:
@@ -148,30 +177,27 @@ def call_agent(query: str) -> str:
             "```\nuvicorn app.main:app --reload\n```"
         )
     except requests.exceptions.Timeout:
-        return "⏱️ Request timed out. The agent is taking too long — try again."
+        return "⏱️ Request timed out. The agents are taking too long — try again."
     except Exception as e:
         return f"❌ Error: {str(e)}"
 
-# ── Handle Quick Route Buttons ────────────────────────────────
+# ── Handle Queries ────────────────────────────────────────────
+def process_query(q: str):
+    st.session_state.messages.append({"role": "user", "content": q})
+    with st.chat_message("user", avatar="🧑"):
+        st.markdown(q)
+    with st.chat_message("assistant", avatar="✈"):
+        with st.spinner(f"🔍 Searching via {provider} ({model_name})..."):
+            result = call_agent(q, provider, model_name, user_api_key)
+        st.markdown(result)
+    st.session_state.messages.append({"role": "assistant", "content": result})
+
+# Quick routes
 if "quick_query" in st.session_state:
     query = st.session_state.pop("quick_query")
-    st.session_state.messages.append({"role": "user", "content": query})
-    with st.chat_message("user", avatar="🧑"):
-        st.markdown(query)
-    with st.chat_message("assistant", avatar="✈"):
-        with st.spinner("🔍 Searching Google Flights..."):
-            result = call_agent(query)
-        st.markdown(result)
-    st.session_state.messages.append({"role": "assistant", "content": result})
+    process_query(query)
     st.rerun()
 
-# ── Chat Input ────────────────────────────────────────────────
+# Chat input
 if prompt := st.chat_input("Ask about flights... e.g. 'Cheapest AUS to LAX on 2026-04-20'"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar="🧑"):
-        st.markdown(prompt)
-    with st.chat_message("assistant", avatar="✈"):
-        with st.spinner("🔍 Searching Google Flights for the best deals..."):
-            result = call_agent(prompt)
-        st.markdown(result)
-    st.session_state.messages.append({"role": "assistant", "content": result})
+    process_query(prompt)
