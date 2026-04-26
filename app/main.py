@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 from app.agent import run_flight_agent
 from dotenv import load_dotenv
 
@@ -13,6 +14,9 @@ app = FastAPI(
 
 class FlightQuery(BaseModel):
     query: str
+    provider: str = "Google"
+    model_name: Optional[str] = None
+    api_key: Optional[str] = None
 
 @app.get("/health")
 def health():
@@ -21,7 +25,12 @@ def health():
 @app.post("/ask")
 def ask(request: FlightQuery):
     try:
-        response = run_flight_agent(request.query)
+        response = run_flight_agent(
+            query=request.query,
+            provider=request.provider,
+            model_name=request.model_name,
+            api_key=request.api_key
+        )
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
