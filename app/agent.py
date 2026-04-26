@@ -1,17 +1,56 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from app.tools.flight_search import search_flight_prices
-from dotenv import load_dotenv
+import os
 import traceback
+from typing import Optional
+from dotenv import load_dotenv
+
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
+from langchain_perplexity import ChatPerplexity
+# Use langchain_classic for AgentExecutor and create_tool_calling_agent in newer LangChain versions
+from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+
+from app.tools.flight_search import search_flight_prices
 
 load_dotenv()
 
-# ✅ 1,000 free requests/day — best free model as of March 2026
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0)
-tools = [search_flight_prices]
+# --- LLM Factory ---
+def get_llm(provider: str, model_name: str, api_key: Optional[str] = None):
+    """Factory to return the correct ChatModel based on provider."""
+    
+    # Use provided API key or fallback to environment variables
+    if provider == "Google":
+        return ChatGoogleGenerativeAI(
+            model=model_name or "gemini-1.5-flash",
+            google_api_key=api_key or os.getenv("GOOGLE_API_KEY"),
+            temperature=0
+        )
+    elif provider == "OpenAI":
+        return ChatOpenAI(
+            model=model_name or "gpt-4o-mini",
+            api_key=api_key or os.getenv("OPENAI_API_KEY"),
+            temperature=0
+        )
+    elif provider == "Anthropic":
+        return ChatAnthropic(
+            model=model_name or "claude-3-5-sonnet-latest",
+            api_key=api_key or os.getenv("ANTHROPIC_API_KEY"),
+            temperature=0
+        )
+    elif provider == "Perplexity":
+        return ChatPerplexity(
+            model=model_name or "sonar",
+            pplx_api_key=api_key or os.getenv("PPLX_API_KEY"),
+            temperature=0
+        )
+    else:
+        # Default fallback
+        return ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
 
-prompt = ChatPromptTemplate.from_messages([
+# --- Prompts ---
+FLIGHT_AGENT_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are a smart flight deals assistant powered by Google Flights data.
 When users ask about flights:
 1. Extract origin, destination, travel date, and trip type (one-way or round trip)
@@ -26,16 +65,46 @@ When users ask about flights:
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
 
-agent = create_tool_calling_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+VERIFIER_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are a specialized Guardrail Agent for a Flight Search system.
+Your job is to review the Flight Agent's response for:
+1. **Accuracy**: Does the flight info (origin/dest/date) match what the user asked for?
+2. **Hallucination**: Does the response look fake? (e.g., $1 flights, nonsensical airline names).
+3. **Completeness**: If flights were found, are they displayed? If not found, is it explained?
+4. **Safety**: Ensure no inappropriate content.
 
-def run_flight_agent(query: str) -> str:
+If the response is GOOD, return it exactly as is.
+If the response has ERRORS (e.g., wrong dates or hallucinated data), provide a corrected summary or explain the issue.
+DO NOT mention you are a verifier in the final output unless there is a critical error."""),
+    ("human", "User Request: {query}\n\nAgent Response:\n{agent_response}"),
+])
+
+# --- Agent Execution ---
+def run_flight_agent(query: str, provider: str = "Google", model_name: str = "gemini-1.5-flash", api_key: str = None) -> str:
     try:
+        # 1. Initialize LLM
+        llm = get_llm(provider, model_name, api_key)
+        tools = [search_flight_prices]
+        
+        # 2. Create and Run Flight Agent
+        agent = create_tool_calling_agent(llm, tools, FLIGHT_AGENT_PROMPT)
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+        
         result = agent_executor.invoke({"input": query})
-        output = result.get("output", "")
-        if not output:
+        agent_output = result.get("output", "")
+        
+        if not agent_output:
             return "The agent ran but returned an empty response. Please try again."
-        return output
+
+        # 3. Verification Step (Guardrails)
+        verifier_chain = VERIFIER_PROMPT | llm | StrOutputParser()
+        verified_output = verifier_chain.invoke({
+            "query": query,
+            "agent_response": agent_output
+        })
+        
+        return verified_output
+
     except Exception as e:
         traceback.print_exc()
         return f"Agent error: {str(e)}"
