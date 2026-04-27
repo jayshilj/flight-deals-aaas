@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from datetime import datetime, timedelta
 
 # ── Page Config ───────────────────────────────────────────────
 st.set_page_config(
@@ -12,59 +13,74 @@ st.set_page_config(
 # ── Light Theme CSS ───────────────────────────────────────────
 st.markdown("""
 <style>
-    .stApp { background-color: #ffffff; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    html, body, [class*="css"]  {
+        font-family: 'Inter', sans-serif;
+    }
+    .stApp { background-color: #f7f9fc; }
 
     .header-box {
-        background: linear-gradient(120deg, #0066FF, #00AAFF);
-        border-radius: 16px;
-        padding: 28px 32px;
+        background: linear-gradient(135deg, #0066FF 0%, #00d2ff 100%);
+        border-radius: 24px;
+        padding: 32px 40px;
         color: white;
         margin-bottom: 24px;
+        box-shadow: 0 10px 30px rgba(0, 102, 255, 0.25);
     }
-    .header-box h1 { color: white; margin: 0; font-size: 2rem; }
-    .header-box p  { color: rgba(255,255,255,0.85); margin: 6px 0 0 0; }
+    .header-box h1 { color: white; margin: 0; font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; }
+    .header-box p  { color: rgba(255,255,255,0.95); margin: 8px 0 0 0; font-size: 1.1rem; font-weight: 500;}
 
     .flight-card {
-        background: #ffffff;
-        border: 1.5 solid #e0e8ff;
-        border-radius: 14px;
-        padding: 18px 22px;
-        margin: 10px 0;
-        box-shadow: 0 2px 8px rgba(0,102,255,0.07);
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin: 12px 0;
+        box-shadow: 0 4px 16px rgba(0,102,255,0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .flight-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,102,255,0.12);
     }
     .best-card {
-        background: #f0f7ff;
+        background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
         border: 2px solid #0066FF;
-        border-radius: 14px;
-        padding: 18px 22px;
-        margin: 10px 0;
-        box-shadow: 0 4px 16px rgba(0,102,255,0.12);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin: 12px 0;
+        box-shadow: 0 8px 24px rgba(0,102,255,0.15);
     }
-    .price { font-size: 1.8rem; font-weight: 800; color: #0066FF; }
-    .airline { font-size: 1.05rem; font-weight: 600; color: #1a1a2e; }
-    .detail { color: #555; font-size: 0.9rem; margin-top: 4px; }
+    .price { font-size: 2rem; font-weight: 800; color: #0066FF; letter-spacing: -0.5px;}
+    .airline { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; }
+    .detail { color: #555; font-size: 0.95rem; margin-top: 6px; font-weight: 500;}
     .badge-best {
-        background: #0066FF; color: white;
-        border-radius: 6px; padding: 3px 10px;
-        font-size: 0.75rem; font-weight: 700;
+        background: linear-gradient(90deg, #0066FF, #00aaff); color: white;
+        border-radius: 8px; padding: 4px 12px;
+        font-size: 0.8rem; font-weight: 700;
+        box-shadow: 0 2px 8px rgba(0,102,255,0.3);
     }
     .badge-nonstop {
         background: #e6fff0; color: #00aa55;
         border: 1px solid #00aa55;
-        border-radius: 6px; padding: 2px 8px;
-        font-size: 0.78rem; font-weight: 600;
+        border-radius: 8px; padding: 3px 10px;
+        font-size: 0.8rem; font-weight: 600;
     }
     .tip-box {
-        background: #f0f4ff;
+        background: rgba(240, 244, 255, 0.7);
         border-left: 4px solid #0066FF;
-        border-radius: 8px;
-        padding: 12px 16px;
-        font-size: 0.9rem;
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-size: 0.95rem;
         color: #333;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     }
     div[data-testid="stChatMessage"] {
-        border-radius: 12px;
-        padding: 6px;
+        border-radius: 16px;
+        padding: 12px;
+        background: rgba(255,255,255,0.6);
+        border: 1px solid rgba(255,255,255,0.8);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -85,7 +101,7 @@ with st.sidebar:
     
     # Default models for each provider
     default_models = {
-        "Google": "gemini-1.5-flash",
+        "Google": "gemini-2.5-flash",
         "Perplexity": "sonar",
         "OpenAI": "gpt-4o-mini",
         "Anthropic": "claude-3-5-sonnet-latest"
@@ -110,18 +126,28 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 🚀 Quick Routes from Austin")
+    
+    target_date = (datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d")
+    
     quick_routes = {
-        "✈ AUS → LAX (Los Angeles)": "Cheapest flights from Austin to Los Angeles on 2026-04-15",
-        "✈ AUS → ORD (Chicago)":     "Cheapest flights from Austin to Chicago on 2026-04-15",
-        "✈ AUS → JFK (New York)":    "Cheapest flights from Austin to New York on 2026-04-15",
-        "✈ AUS → MIA (Miami)":       "Cheapest flights from Austin to Miami on 2026-04-15",
-        "✈ AUS → SFO (San Francisco)": "Cheapest flights from Austin to San Francisco on 2026-04-15",
+        "✈ AUS → LAX (Los Angeles)": f"Cheapest flights from Austin to Los Angeles on {target_date}",
+        "✈ AUS → ORD (Chicago)":     f"Cheapest flights from Austin to Chicago on {target_date}",
+        "✈ AUS → JFK (New York)":    f"Cheapest flights from Austin to New York on {target_date}",
+        "✈ AUS → MIA (Miami)":       f"Cheapest flights from Austin to Miami on {target_date}",
+        "✈ AUS → SFO (San Francisco)": f"Cheapest flights from Austin to San Francisco on {target_date}",
     }
     for label, query in quick_routes.items():
         if st.button(label, use_container_width=True, key=label):
             st.session_state.quick_query = query
 
     st.divider()
+    st.markdown("### 👨‍💻 Developer")
+    st.markdown("""
+    **Jayshil Jain**
+    - 🌐 [Website](https://jayshiljain.com)
+    - 💼 [LinkedIn](https://linkedin.com/in/jayshiljain)
+    - 🐙 [GitHub](https://github.com/jayshilj)
+    """)
     st.caption("🔒 API keys entered here are NOT stored.")
 
 # ── Header ────────────────────────────────────────────────────
@@ -144,10 +170,16 @@ if "messages" not in st.session_state:
 for msg in st.session_state.messages:
     avatar = "🧑" if msg["role"] == "user" else "✈"
     with st.chat_message(msg["role"], avatar=avatar):
+        if msg.get("steps"):
+            with st.expander("🛠️ View Agent Data Citations & Tools"):
+                for step in msg["steps"]:
+                    st.markdown(f"**Tool Used:** `{step['tool']}`")
+                    st.markdown(f"**Search Query:** `{step['input']}`")
+                    st.markdown(f"**Data Cited:**\n```text\n{step['observation']}\n```")
         st.markdown(msg["content"])
 
 # ── API Call Helper ───────────────────────────────────────────
-def call_agent(query: str, provider: str, model_name: str, api_key: str) -> str:
+def call_agent(query: str, provider: str, model_name: str, api_key: str) -> dict:
     try:
         payload = {
             "query": query,
@@ -163,23 +195,22 @@ def call_agent(query: str, provider: str, model_name: str, api_key: str) -> str:
         resp.raise_for_status()
         data = resp.json()
 
-        if "response" in data and data["response"]:
-            return data["response"]
+        if "response" in data:
+            return {"response": data["response"], "steps": data.get("steps", [])}
         elif "detail" in data:
-            return f"❌ Server error: {data['detail']}"
+            return {"response": f"❌ Server error: {data['detail']}", "steps": []}
         else:
-            return f"⚠️ Unexpected response format: {str(data)}"
+            return {"response": f"⚠️ Unexpected response format: {str(data)}", "steps": []}
 
     except requests.exceptions.ConnectionError:
-        return (
-            "❌ **Cannot connect to the Flight Agent API.**\n\n"
-            "Make sure FastAPI is running in your first terminal:\n"
-            "```\nuvicorn app.main:app --reload\n```"
-        )
+        return {
+            "response": "❌ **Cannot connect to the Flight Agent API.**\n\nMake sure FastAPI is running in your first terminal:\n```\nuvicorn app.main:app --reload\n```",
+            "steps": []
+        }
     except requests.exceptions.Timeout:
-        return "⏱️ Request timed out. The agents are taking too long — try again."
+        return {"response": "⏱️ Request timed out. The agents are taking too long — try again.", "steps": []}
     except Exception as e:
-        return f"❌ Error: {str(e)}"
+        return {"response": f"❌ Error: {str(e)}", "steps": []}
 
 # ── Handle Queries ────────────────────────────────────────────
 def process_query(q: str):
@@ -188,9 +219,18 @@ def process_query(q: str):
         st.markdown(q)
     with st.chat_message("assistant", avatar="✈"):
         with st.spinner(f"🔍 Searching via {provider} ({model_name})..."):
-            result = call_agent(q, provider, model_name, user_api_key)
-        st.markdown(result)
-    st.session_state.messages.append({"role": "assistant", "content": result})
+            result_data = call_agent(q, provider, model_name, user_api_key)
+            
+        steps = result_data.get("steps", [])
+        if steps:
+            with st.expander("🛠️ View Agent Data Citations & Tools"):
+                for step in steps:
+                    st.markdown(f"**Tool Used:** `{step['tool']}`")
+                    st.markdown(f"**Search Query:** `{step['input']}`")
+                    st.markdown(f"**Data Cited:**\n```text\n{step['observation']}\n```")
+        st.markdown(result_data["response"])
+        
+    st.session_state.messages.append({"role": "assistant", "content": result_data["response"], "steps": steps})
 
 # Quick routes
 if "quick_query" in st.session_state:
