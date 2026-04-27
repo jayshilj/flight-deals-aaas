@@ -43,9 +43,7 @@ def search_flight_prices(origin: str, destination: str, departure_date: str,
         all_flights = (best_flights + other_flights)[:5]
 
         if not all_flights:
-            # Return raw keys for debugging
-            available_keys = list(results.keys())
-            return f"No flights found from {origin} to {destination} on {departure_date}. API returned keys: {available_keys}"
+            return f"No flights found from {origin} to {destination} on {departure_date}. The airline schedules might not be published yet, or the route may not exist."
 
         output_lines = [f"✈ Flights from {origin} → {destination} on {departure_date}\n"]
 
