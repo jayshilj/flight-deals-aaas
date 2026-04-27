@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
-from langchain_perplexity import ChatPerplexity
 # Use langchain_classic for AgentExecutor and create_tool_calling_agent in newer LangChain versions
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent, create_react_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
@@ -110,7 +109,15 @@ Your job is to review the Flight Agent's response for:
 
 If the response is GOOD, return it exactly as is.
 If the response has ERRORS (e.g., wrong dates or hallucinated data), provide a corrected summary or explain the issue.
-DO NOT mention you are a verifier in the final output unless there is a critical error."""),
+DO NOT mention you are a verifier in the final output unless there is a critical error.
+
+You MUST format your entire response using the following XML tags:
+<verification_log>
+(Write a short 1-2 sentence internal log of your checks here. Explain if you found any errors and how you fixed them, or just state that the data passed all checks.)
+</verification_log>
+<final_output>
+(Put the final verified response or table here. This is what the user will see.)
+</final_output>"""),
     ("human", "User Request: {query}\n\nAgent Response:\n{agent_response}"),
 ])
 
@@ -129,23 +136,29 @@ def run_flight_agent(query: str, provider: str = "Google", model_name: str = "ge
             # We just query it directly!
             if provider == "Perplexity":
                 messages = [
-                    ("system", "You are a smart flight deals assistant. The user will ask for flight information. Use your native search capabilities to find the best flights for them and present the results clearly."),
+                    ("system", """You are a smart flight deals assistant. The user will ask for flight information. Use your native search capabilities to find the best flights for them.
+Present the final flight results exclusively in a clear, easy-to-read Markdown Table format. Include columns like Airline, Price, Departure, Arrival, Duration, Stops, and Notes. Do not use plain text lists for the flights."""),
                     ("human", query)
                 ]
                 response = llm.invoke(messages)
-                return {"response": response.content, "steps": []}
-                
-            agent = create_tool_calling_agent(llm, tools, FLIGHT_AGENT_PROMPT)
-            agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, return_intermediate_steps=True)
-            result = agent_executor.invoke({"input": query})
-            agent_output = result.get("output", "")
-            
-            for action, observation in result.get("intermediate_steps", []):
+                agent_output = response.content
                 parsed_steps.append({
-                    "tool": action.tool,
-                    "input": action.tool_input,
-                    "observation": str(observation)
+                    "tool": "Perplexity Native Web Search",
+                    "input": query,
+                    "observation": "Real-time native web search results compiled internally by Perplexity."
                 })
+            else:
+                agent = create_tool_calling_agent(llm, tools, FLIGHT_AGENT_PROMPT)
+                agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, return_intermediate_steps=True)
+                result = agent_executor.invoke({"input": query})
+                agent_output = result.get("output", "")
+                
+                for action, observation in result.get("intermediate_steps", []):
+                    parsed_steps.append({
+                        "tool": action.tool,
+                        "input": action.tool_input,
+                        "observation": str(observation)
+                    })
         except Exception as e:
             error_msg_lower = str(e).lower()
             if "custom stop words" in error_msg_lower:
@@ -175,13 +188,21 @@ def run_flight_agent(query: str, provider: str = "Google", model_name: str = "ge
             return {"response": "The agent ran but returned an empty response. Please try again.", "steps": parsed_steps}
 
         # 3. Verification Step (Guardrails)
+        import re
         verifier_chain = VERIFIER_PROMPT | llm | StrOutputParser()
-        verified_output = verifier_chain.invoke({
+        verifier_raw = verifier_chain.invoke({
             "query": query,
             "agent_response": agent_output
         })
         
-        return {"response": verified_output, "steps": parsed_steps}
+        # Parse XML tags
+        log_match = re.search(r'<verification_log>(.*?)</verification_log>', verifier_raw, re.DOTALL)
+        out_match = re.search(r'<final_output>(.*?)</final_output>', verifier_raw, re.DOTALL)
+        
+        verifier_log = log_match.group(1).strip() if log_match else "No explicit verification log provided."
+        verified_output = out_match.group(1).strip() if out_match else verifier_raw.strip()
+        
+        return {"response": verified_output, "steps": parsed_steps, "verifier_log": verifier_log}
 
     except Exception as e:
         traceback.print_exc()
