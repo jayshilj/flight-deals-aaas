@@ -176,6 +176,9 @@ for msg in st.session_state.messages:
                     st.markdown(f"**Tool Used:** `{step['tool']}`")
                     st.markdown(f"**Search Query:** `{step['input']}`")
                     st.markdown(f"**Data Cited:**\n```text\n{step['observation']}\n```")
+        if msg.get("verifier_log"):
+            with st.expander("🛡️ Guardrail Verifier Checks"):
+                st.markdown(f"**Verifier Internal Log:**\n> {msg['verifier_log']}")
         st.markdown(msg["content"])
 
 # ── API Call Helper ───────────────────────────────────────────
@@ -196,11 +199,11 @@ def call_agent(query: str, provider: str, model_name: str, api_key: str) -> dict
         data = resp.json()
 
         if "response" in data:
-            return {"response": data["response"], "steps": data.get("steps", [])}
+            return {"response": data["response"], "steps": data.get("steps", []), "verifier_log": data.get("verifier_log", "")}
         elif "detail" in data:
-            return {"response": f"❌ Server error: {data['detail']}", "steps": []}
+            return {"response": f"❌ Server error: {data['detail']}", "steps": [], "verifier_log": ""}
         else:
-            return {"response": f"⚠️ Unexpected response format: {str(data)}", "steps": []}
+            return {"response": f"⚠️ Unexpected response format: {str(data)}", "steps": [], "verifier_log": ""}
 
     except requests.exceptions.ConnectionError:
         return {
@@ -218,19 +221,26 @@ def process_query(q: str):
     with st.chat_message("user", avatar="🧑"):
         st.markdown(q)
     with st.chat_message("assistant", avatar="✈"):
-        with st.spinner(f"🔍 Searching via {provider} ({model_name})..."):
+        with st.spinner(f"🔍 Searching & Verifying via {provider} ({model_name})..."):
             result_data = call_agent(q, provider, model_name, user_api_key)
             
         steps = result_data.get("steps", [])
+        verifier_log = result_data.get("verifier_log", "")
+        
         if steps:
             with st.expander("🛠️ View Agent Data Citations & Tools"):
                 for step in steps:
                     st.markdown(f"**Tool Used:** `{step['tool']}`")
                     st.markdown(f"**Search Query:** `{step['input']}`")
                     st.markdown(f"**Data Cited:**\n```text\n{step['observation']}\n```")
+                    
+        if verifier_log:
+            with st.expander("🛡️ Guardrail Verifier Checks"):
+                st.markdown(f"**Verifier Internal Log:**\n> {verifier_log}")
+                
         st.markdown(result_data["response"])
         
-    st.session_state.messages.append({"role": "assistant", "content": result_data["response"], "steps": steps})
+    st.session_state.messages.append({"role": "assistant", "content": result_data["response"], "steps": steps, "verifier_log": verifier_log})
 
 # Quick routes
 if "quick_query" in st.session_state:
