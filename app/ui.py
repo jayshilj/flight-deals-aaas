@@ -1,6 +1,9 @@
 import streamlit as st
 import requests
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ── Page Config ───────────────────────────────────────────────
 st.set_page_config(
