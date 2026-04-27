@@ -42,8 +42,9 @@ def search_flight_prices(origin: str, destination: str, departure_date: str,
         other_flights = results.get("other_flights", [])
         all_flights = (best_flights + other_flights)[:5]
 
+        # Fallback check for missing flights array in search
         if not all_flights:
-            return f"No flights found from {origin} to {destination} on {departure_date}. The airline schedules might not be published yet, or the route may not exist."
+            return f"No flights found from {origin} to {destination} on {departure_date}. The airline schedules might not be published yet, or the route may not exist. Please advise the user to try a different date or nearby airport."
 
         output_lines = [f"✈ Flights from {origin} → {destination} on {departure_date}\n"]
 
