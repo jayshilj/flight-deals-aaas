@@ -14,6 +14,7 @@ st.set_page_config(
 )
 
 # ── Light Theme CSS ───────────────────────────────────────────
+# Formatted to improve readability
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
