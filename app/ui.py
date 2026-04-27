@@ -145,6 +145,11 @@ with st.sidebar:
             st.session_state.quick_query = query
 
     st.divider()
+    if st.button("🗑️ Clear Chat", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+    st.divider()
     st.markdown("### 👨‍💻 Developer")
     st.markdown("""
     **Jayshil Jain**
