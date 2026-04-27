@@ -9,13 +9,15 @@ An AI-powered global flight search assistant that finds the best real-time deals
 - **Natural Language Search**: Ask for flights like you're talking to a travel agent.
 - **Real-Time Data**: Integrated with the **SerpApi Google Flights engine** for live pricing, duration, and carbon emissions.
 - **Multi-Model Support**: Choose your preferred AI provider:
-  - **Google Gemini** (1.5 Flash)
+  - **Google Gemini** (2.5 Flash)
   - **Perplexity** (Sonar)
   - **OpenAI** (GPT-4o-mini)
   - **Anthropic** (Claude 3.5 Sonnet)
 - **Guardrail Agent**: Every search is verified by a second "Supervisor" agent to ensure accuracy and prevent hallucinations.
+- **Transparent Execution**: Expandable UI sections to view exact **Agent Data Citations & Tools** and **Guardrail Verifier Checks**.
+- **ReAct Fallback**: Automatically falls back to a ReAct (Reasoning & Acting) text agent if the chosen model lacks native tool-calling support.
+- **Responsive Modern UI**: Built with Streamlit, featuring a glassmorphism design, Markdown tables for flight results, dynamic quick-route buttons, and developer attribution.
 - **Session-Based API Keys**: Securely enter your own API keys in the UI (they are not stored on the server).
-- **Responsive UI**: Built with Streamlit, featuring rich result cards and quick-route buttons.
 
 ---
 
@@ -27,12 +29,12 @@ The project follows a modular "Agent-as-a-Service" pattern:
     - Exposes a `/ask` REST endpoint.
     - Orchestrates the LLM factory and agent execution.
 2.  **AI Agent (LangChain)**:
-    - **Flight Agent**: Processes natural language to extract origin/destination and calls tools.
-    - **Verifier Agent**: Reviews the Flight Agent's output against the user's original request to ensure high fidelity.
+    - **Flight Agent**: Processes natural language to extract origin/destination and executes tool calls. Defaults to a ReAct agent or native search bypass if standard tool-calling is unsupported.
+    - **Verifier Agent**: Reviews the Flight Agent's output against the user's original request to ensure high fidelity, outputting internal logs in XML for UI parsing.
 3.  **Search Tool**:
-    - Direct integration with Google Flights data via SerpApi.
+    - Direct integration with Google Flights data via SerpApi, with built-in empty-state handling.
 4.  **Frontend (Streamlit)**:
-    - Interactive chat interface with a dedicated "Model Settings" sidebar.
+    - Modern, glassmorphism-inspired interface showing Markdown-formatted tables, expandable tool execution logs, and an interactive chat interface.
 
 ---
 
