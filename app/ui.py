@@ -145,7 +145,7 @@ with st.sidebar:
             st.session_state.quick_query = query
 
     st.divider()
-    if st.button("🗑️ Clear Chat", use_container_width=True):
+    if st.button("🗑️ Clear Chat", use_container_width=True, help="Click to clear the conversation history and start fresh."):
         st.session_state.messages = []
         st.rerun()
 
