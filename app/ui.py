@@ -7,8 +7,8 @@ load_dotenv()
 
 # ── Page Config ───────────────────────────────────────────────
 st.set_page_config(
-    page_title="✈ Flight Deals Agent",
-    page_icon="✈",
+    page_title="🌍 Complete Trip Agent",
+    page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -91,8 +91,8 @@ st.markdown("""
 
 # ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## ✈ Flight Deals Agent")
-    st.caption("AI-Powered Global Flight Search")
+    st.markdown("## 🌍 Complete Trip Agent")
+    st.caption("AI-Powered Flights, Hotels & Itineraries")
     st.divider()
 
     # --- Model Settings ---
@@ -123,8 +123,8 @@ with st.sidebar:
     st.markdown("""
 <div class='tip-box'>
 • "Cheapest flights from Austin to LA on April 15"<br><br>
-• "Round trip AUS to NYC April 20, return April 27"<br><br>
-• "Flights from Dallas to Miami on 2026-05-01"
+• "Find me a flight to Denver next Friday, a 4-star hotel, and a 2-day itinerary"<br><br>
+• "Round trip AUS to NYC April 20 with hotel and top restaurants"
 </div>
 """, unsafe_allow_html=True)
 
@@ -162,8 +162,8 @@ with st.sidebar:
 # ── Header ────────────────────────────────────────────────────
 st.markdown("""
 <div class='header-box'>
-    <h1>✈ Flight Deals Agent</h1>
-    <p>Ask me to find the best flights — now with Guardrail Agent verification</p>
+    <h1>🌍 Complete Trip Agent</h1>
+    <p>Ask me to plan your flights, hotels, and itineraries — verified by a Guardrail Agent</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -172,7 +172,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.messages.append({
         "role": "assistant",
-        "content": "👋 Hi! I'm your **Flight Deals Agent**. I search real Google Flights data to find you the best prices!\n\n**Try asking:** *\"Find cheapest flights from Austin to Los Angeles on 2026-04-20\"*"
+        "content": "👋 Hi! I'm your **Complete Trip Agent**. I search real Google data to find you the best flights, hotels, and local activities!\n\n**Try asking:** *\"Find cheapest flights from Austin to Denver on 2026-05-10 and a 4-star hotel.\"*"
     })
 
 # ── Chat History ──────────────────────────────────────────────
@@ -182,9 +182,10 @@ for msg in st.session_state.messages:
         if msg.get("steps"):
             with st.expander("🛠️ View Agent Data Citations & Tools"):
                 for step in msg["steps"]:
-                    st.markdown(f"**Tool Used:** `{step['tool']}`")
-                    st.markdown(f"**Search Query:** `{step['input']}`")
-                    st.markdown(f"**Data Cited:**\n```text\n{step['observation']}\n```")
+                    st.markdown(f"**Agent:** `{step.get('agent', 'Unknown Agent')}`")
+                    st.markdown(f"**Tool Used:** `{step['tool']}` | **Query:** `{step['input']}`")
+                    st.markdown(f"**Observation:**\n```text\n{step['observation']}\n```")
+                    st.divider()
         if msg.get("verifier_log"):
             with st.expander("🛡️ Guardrail Verifier Checks"):
                 st.markdown(f"**Verifier Internal Log:**\n> {msg['verifier_log']}")
@@ -239,9 +240,10 @@ def process_query(q: str):
         if steps:
             with st.expander("🛠️ View Agent Data Citations & Tools"):
                 for step in steps:
-                    st.markdown(f"**Tool Used:** `{step['tool']}`")
-                    st.markdown(f"**Search Query:** `{step['input']}`")
-                    st.markdown(f"**Data Cited:**\n```text\n{step['observation']}\n```")
+                    st.markdown(f"**Agent:** `{step.get('agent', 'Unknown Agent')}`")
+                    st.markdown(f"**Tool Used:** `{step['tool']}` | **Query:** `{step['input']}`")
+                    st.markdown(f"**Observation:**\n```text\n{step['observation']}\n```")
+                    st.divider()
                     
         if verifier_log:
             with st.expander("🛡️ Guardrail Verifier Checks"):
@@ -258,5 +260,5 @@ if "quick_query" in st.session_state:
     st.rerun()
 
 # Chat input
-if prompt := st.chat_input("Ask about flights... e.g. 'Cheapest AUS to LAX on 2026-04-20'"):
+if prompt := st.chat_input("Plan a trip... e.g. 'Cheapest AUS to LAX on 2026-04-20 and a hotel'"):
     process_query(prompt)
