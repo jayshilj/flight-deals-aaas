@@ -1,40 +1,36 @@
-# ✈️ Flight Deals Agent as a Service (AaaS)
+# 🌍 Complete Trip Agent as a Service (AaaS)
 
-An AI-powered global flight search assistant that finds the best real-time deals using natural language. Now with multi-model support and a specialized Guardrail Agent for verification.
+An AI-powered global travel assistant that plans your entire trip using natural language. Upgraded with a **Multi-Agent Architecture**, it seamlessly orchestrates Flight, Hotel, and Activity searches, all verified by a rigorous Guardrail Agent with an active Rework Feedback Loop.
 
 ---
 
 ## 🌟 Features
 
-- **Natural Language Search**: Ask for flights like you're talking to a travel agent.
-- **Real-Time Data**: Integrated with the **SerpApi Google Flights engine** for live pricing, duration, and carbon emissions.
+- **Complete Trip Planning**: Ask for flights, hotels, and itineraries all in one prompt.
+- **Multi-Agent Orchestration**: A Trip Orchestrator delegates tasks to specialized sub-agents:
+  - ✈️ **Flight Agent**: Real-time Google Flights data via SerpApi.
+  - 🏨 **Hotel Agent**: Real-time Google Hotels data via SerpApi.
+  - 📍 **Activity Agent**: Google Local/Web Search data for attractions and itineraries.
+- **Guardrail Rework Loop**: A stringent Verifier Agent reviews all outputs. If it detects poor hotel ratings or generic "tourist trap" itineraries, it issues a `REWORK` command, forcing the sub-agents to retry and improve the results.
 - **Multi-Model Support**: Choose your preferred AI provider:
   - **Google Gemini** (2.5 Flash)
   - **Perplexity** (Sonar)
   - **OpenAI** (GPT-4o-mini)
   - **Anthropic** (Claude 3.5 Sonnet)
-- **Guardrail Agent**: Every search is verified by a second "Supervisor" agent to ensure accuracy and prevent hallucinations.
-- **Transparent Execution**: Expandable UI sections to view exact **Agent Data Citations & Tools** and **Guardrail Verifier Checks**.
-- **ReAct Fallback**: Automatically falls back to a ReAct (Reasoning & Acting) text agent if the chosen model lacks native tool-calling support.
-- **Responsive Modern UI**: Built with Streamlit, featuring a glassmorphism design, Markdown tables for flight results, dynamic quick-route buttons, and developer attribution.
-- **Session-Based API Keys**: Securely enter your own API keys in the UI (they are not stored on the server).
+- **Transparent Execution**: Expandable UI sections to view exact **Agent Data Citations & Tools** (grouped by attempt) and **Guardrail Verifier Checks**.
+- **Responsive Modern UI**: Built with Streamlit, featuring a glassmorphism design and Markdown tables for clear, beautiful results.
 
 ---
 
 ## 🏗️ Architecture
 
-The project follows a modular "Agent-as-a-Service" pattern:
+The project follows a robust "Supervisor Multi-Agent" pattern:
 
-1.  **Backend (FastAPI)**:
-    - Exposes a `/ask` REST endpoint.
-    - Orchestrates the LLM factory and agent execution.
-2.  **AI Agent (LangChain)**:
-    - **Flight Agent**: Processes natural language to extract origin/destination and executes tool calls. Defaults to a ReAct agent or native search bypass if standard tool-calling is unsupported.
-    - **Verifier Agent**: Reviews the Flight Agent's output against the user's original request to ensure high fidelity, outputting internal logs in XML for UI parsing.
-3.  **Search Tool**:
-    - Direct integration with Google Flights data via SerpApi, with built-in empty-state handling.
-4.  **Frontend (Streamlit)**:
-    - Modern, glassmorphism-inspired interface showing Markdown-formatted tables, expandable tool execution logs, and an interactive chat interface.
+1.  **Trip Orchestrator**: Analyzes the request and builds a JSON execution plan.
+2.  **Sub-Agents (LangChain)**: Run parallel/sequential tool calls to gather real-time travel data.
+3.  **Guardrail Verifier**: Checks the aggregated data against quality standards. If it fails, it triggers a feedback loop back to the sub-agents.
+4.  **FastAPI Backend**: Exposes a `/ask` REST endpoint orchestrating the LLM factory.
+5.  **Streamlit Frontend**: Displays the fully verified trip package and the interactive agent logs.
 
 ---
 
@@ -42,7 +38,7 @@ The project follows a modular "Agent-as-a-Service" pattern:
 
 ### 1. Prerequisites
 - Python 3.10+
-- [SerpApi Key](https://serpapi.com/) (Required for flight data)
+- [SerpApi Key](https://serpapi.com/) (Required for Google Flights, Hotels, and Local searches)
 - API Key for your preferred LLM provider (Google, Perplexity, OpenAI, or Anthropic)
 
 ### 2. Installation
@@ -73,14 +69,14 @@ streamlit run app/ui.py
 ---
 
 ## 💡 Example Queries
-- *"Cheapest flights from Austin to LA on April 15"*
-- *"Round trip AUS to NYC April 20, return April 27"*
-- *"Flights from Dallas to Miami on 2026-05-01"*
+- *"Find me a flight to Denver next Friday, a 4-star hotel, and a 2-day hiking itinerary."*
+- *"Cheapest flights from Austin to LA on April 15 with a budget hotel."*
+- *"Find me a trip to a tourist trap in Denver with the worst-rated hotels."* (Watch the Guardrail trigger a rework!)
 
 ---
 
 ## 🛠️ Technology Stack
 - **Frameworks**: FastAPI, Streamlit
-- **AI Orchestration**: LangChain, LangChain-Classic
+- **AI Orchestration**: LangChain, Multi-Agent Feedback Loops
 - **Models**: Google Gemini, Perplexity Sonar, OpenAI GPT, Anthropic Claude
-- **Data Source**: SerpApi (Google Flights)
+- **Data Source**: SerpApi (Google Flights, Hotels, Local Search)
