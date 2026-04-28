@@ -1,14 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from app.agent import run_flight_agent
+from app.agent import run_trip_agent
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI(
-    title="✈ Flight Deals Agent as a Service",
-    description="AI-powered agent that finds the best flight deals using Amadeus API",
+    title="✈ Complete Trip Agent as a Service",
+    description="AI-powered agent that plans flights, hotels, and itineraries",
     version="1.0.0"
 )
 
@@ -20,17 +20,17 @@ class FlightQuery(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "Flight Deals AaaS"}
+    return {"status": "ok", "service": "Complete Trip AaaS"}
 
 @app.post("/ask")
 def ask(request: FlightQuery):
     try:
-        response = run_flight_agent(
+        response = run_trip_agent(
             query=request.query,
             provider=request.provider,
             model_name=request.model_name,
             api_key=request.api_key
         )
-        return {"response": response}
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
