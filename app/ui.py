@@ -189,6 +189,13 @@ for msg in st.session_state.messages:
         if msg.get("verifier_log"):
             with st.expander("🛡️ Guardrail Verifier Checks"):
                 st.markdown(f"**Verifier Internal Log:**\n> {msg['verifier_log']}")
+        if msg.get("timings"):
+            with st.expander("⏱️ Processing Times"):
+                for agent_name, t in msg["timings"].items():
+                    if t > 0:
+                        if agent_name == "Total":
+                            st.divider()
+                        st.markdown(f"**{agent_name}:** `{t:.2f}s`")
         st.markdown(msg["content"])
 
 # ── API Call Helper ───────────────────────────────────────────
@@ -209,11 +216,16 @@ def call_agent(query: str, provider: str, model_name: str, api_key: str) -> dict
         data = resp.json()
 
         if "response" in data:
-            return {"response": data["response"], "steps": data.get("steps", []), "verifier_log": data.get("verifier_log", "")}
+            return {
+                "response": data["response"], 
+                "steps": data.get("steps", []), 
+                "verifier_log": data.get("verifier_log", ""),
+                "timings": data.get("timings", {})
+            }
         elif "detail" in data:
-            return {"response": f"❌ Server error: {data['detail']}", "steps": [], "verifier_log": ""}
+            return {"response": f"❌ Server error: {data['detail']}", "steps": [], "verifier_log": "", "timings": {}}
         else:
-            return {"response": f"⚠️ Unexpected response format: {str(data)}", "steps": [], "verifier_log": ""}
+            return {"response": f"⚠️ Unexpected response format: {str(data)}", "steps": [], "verifier_log": "", "timings": {}}
 
     except requests.exceptions.ConnectionError:
         return {
@@ -249,9 +261,24 @@ def process_query(q: str):
             with st.expander("🛡️ Guardrail Verifier Checks"):
                 st.markdown(f"**Verifier Internal Log:**\n> {verifier_log}")
                 
+        timings = result_data.get("timings", {})
+        if timings:
+            with st.expander("⏱️ Processing Times"):
+                for agent_name, t in timings.items():
+                    if t > 0:
+                        if agent_name == "Total":
+                            st.divider()
+                        st.markdown(f"**{agent_name}:** `{t:.2f}s`")
+                        
         st.markdown(result_data["response"])
         
-    st.session_state.messages.append({"role": "assistant", "content": result_data["response"], "steps": steps, "verifier_log": verifier_log})
+    st.session_state.messages.append({
+        "role": "assistant", 
+        "content": result_data["response"], 
+        "steps": steps, 
+        "verifier_log": verifier_log,
+        "timings": timings
+    })
 
 # Quick routes
 if "quick_query" in st.session_state:
