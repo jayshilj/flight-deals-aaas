@@ -2,6 +2,7 @@ import os
 import json
 import traceback
 import re
+import time
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -121,7 +122,10 @@ def run_sub_agent(llm, tools, prompt, query, agent_name):
     try:
         agent = create_tool_calling_agent(llm, tools, prompt)
         executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, return_intermediate_steps=True)
+        
+        start_time = time.time()
         res = executor.invoke({"input": query})
+        elapsed_time = time.time() - start_time
         
         steps = []
         for action, observation in res.get("intermediate_steps", []):
@@ -138,20 +142,32 @@ def run_sub_agent(llm, tools, prompt, query, agent_name):
         else:
             out = str(out)
             
-        return out, steps
+        return out, steps, elapsed_time
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return f"Error in {agent_name}: {str(e)}", []
+        return f"Error in {agent_name}: {str(e)}", [], 0.0
 
 # --- Main Execution ---
 def run_trip_agent(query: str, provider: str = "Google", model_name: str = "gemini-2.5-flash", api_key: str = None) -> dict:
     try:
+        total_start_time = time.time()
         llm = get_llm(provider, model_name, api_key)
         
+        timings = {
+            "Trip Orchestrator": 0.0,
+            "Flight Agent": 0.0,
+            "Hotel Agent": 0.0,
+            "Activity Agent": 0.0,
+            "Guardrail Verifier": 0.0,
+            "Total": 0.0
+        }
+        
         # 1. Orchestrator
+        orch_start = time.time()
         orchestrator_chain = ORCHESTRATOR_PROMPT | llm | StrOutputParser()
         orchestrator_raw = orchestrator_chain.invoke({"input": query})
+        timings["Trip Orchestrator"] += time.time() - orch_start
         
         # Parse JSON from orchestrator
         try:
@@ -184,19 +200,22 @@ def run_trip_agent(query: str, provider: str = "Google", model_name: str = "gemi
 
             # 2. Flight Agent
             if plan.get("needs_flights") and flight_q:
-                flight_out, flight_steps = run_sub_agent(llm, [search_flight_prices], FLIGHT_AGENT_PROMPT, flight_q, f"Flight Agent (Attempt {attempt+1})")
+                flight_out, flight_steps, flight_time = run_sub_agent(llm, [search_flight_prices], FLIGHT_AGENT_PROMPT, flight_q, f"Flight Agent (Attempt {attempt+1})")
+                timings["Flight Agent"] += flight_time
                 combined_responses.append("--- Flights ---\n" + flight_out)
                 all_steps.extend(flight_steps)
 
             # 3. Hotel Agent
             if plan.get("needs_hotels") and hotel_q:
-                hotel_out, hotel_steps = run_sub_agent(llm, [search_hotel_prices], HOTEL_AGENT_PROMPT, hotel_q, f"Hotel Agent (Attempt {attempt+1})")
+                hotel_out, hotel_steps, hotel_time = run_sub_agent(llm, [search_hotel_prices], HOTEL_AGENT_PROMPT, hotel_q, f"Hotel Agent (Attempt {attempt+1})")
+                timings["Hotel Agent"] += hotel_time
                 combined_responses.append("--- Hotels ---\n" + hotel_out)
                 all_steps.extend(hotel_steps)
 
             # 4. Activity Agent
             if plan.get("needs_activities") and activity_q:
-                act_out, act_steps = run_sub_agent(llm, [search_local_activities], ACTIVITY_AGENT_PROMPT, activity_q, f"Activity Agent (Attempt {attempt+1})")
+                act_out, act_steps, act_time = run_sub_agent(llm, [search_local_activities], ACTIVITY_AGENT_PROMPT, activity_q, f"Activity Agent (Attempt {attempt+1})")
+                timings["Activity Agent"] += act_time
                 combined_responses.append("--- Activities ---\n" + act_out)
                 all_steps.extend(act_steps)
 
@@ -205,11 +224,13 @@ def run_trip_agent(query: str, provider: str = "Google", model_name: str = "gemi
                 combined_text = "No agents were triggered based on the request."
 
             # 5. Verifier
+            v_start = time.time()
             verifier_chain = VERIFIER_PROMPT | llm | StrOutputParser()
             verifier_raw = verifier_chain.invoke({
                 "query": query,
                 "agent_response": combined_text
             })
+            timings["Guardrail Verifier"] += time.time() - v_start
             
             log_match = re.search(r'<verification_log>(.*?)</verification_log>', verifier_raw, re.DOTALL)
             status_match = re.search(r'<status>(.*?)</status>', verifier_raw, re.DOTALL)
@@ -240,7 +261,9 @@ def run_trip_agent(query: str, provider: str = "Google", model_name: str = "gemi
         if not verified_output:
              verified_output = combined_text
 
-        return {"response": verified_output, "steps": all_steps, "verifier_log": verifier_logs_combined.strip()}
+        timings["Total"] = time.time() - total_start_time
+
+        return {"response": verified_output, "steps": all_steps, "verifier_log": verifier_logs_combined.strip(), "timings": timings}
 
     except Exception as e:
         traceback.print_exc()
