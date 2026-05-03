@@ -18,6 +18,7 @@ An AI-powered global travel assistant that plans your entire trip using natural 
   - **OpenAI** (GPT-4o-mini)
   - **Anthropic** (Claude 3.5 Sonnet)
 - **Transparent Execution**: Expandable UI sections to view exact **Agent Data Citations & Tools** (grouped by attempt) and **Guardrail Verifier Checks**.
+- **Performance Metrics**: A dedicated "⏱️ Processing Times" expander breaks down the execution time in seconds for each sub-agent and the overall system.
 - **Responsive Modern UI**: Built with Streamlit, featuring a glassmorphism design and Markdown tables for clear, beautiful results.
 
 ---
