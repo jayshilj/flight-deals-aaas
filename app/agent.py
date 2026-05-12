@@ -140,7 +140,15 @@ def run_sub_agent(llm, tools, prompt, query, agent_name):
         
         out = res.get("output", "")
         if isinstance(out, list):
-            out = " ".join([str(x) for x in out])
+            text_parts = []
+            for x in out:
+                if isinstance(x, dict) and "text" in x:
+                    text_parts.append(x["text"])
+                elif isinstance(x, str):
+                    text_parts.append(x)
+                else:
+                    text_parts.append(str(x))
+            out = " ".join(text_parts)
         else:
             out = str(out)
             
