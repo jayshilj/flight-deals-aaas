@@ -75,8 +75,8 @@ Do NOT output anything other than JSON."""),
 ])
 
 FLIGHT_AGENT_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are the Flight Agent. Use search_flight_prices to find flights.
-Present results in a Markdown Table format."""),
+    ("system", """You are the Flight Agent. Use search_flight_prices or search_ultralow_flights to find flights depending on the tools available.
+You MUST present all results in a nicely formatted Markdown Table structure. Do not output raw text blocks."""),
     ("human", "{input}"),
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
