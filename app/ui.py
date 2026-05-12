@@ -124,6 +124,7 @@ with st.sidebar:
 <div class='tip-box'>
 • "Cheapest flights from Austin to LA on April 15"<br><br>
 • "Find me a flight to Denver next Friday, a 4-star hotel, and a 2-day itinerary"<br><br>
+• "/ultralow flights from AUS to NYC April 20"<br><br>
 • "Round trip AUS to NYC April 20 with hotel and top restaurants"
 </div>
 """, unsafe_allow_html=True)
