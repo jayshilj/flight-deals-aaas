@@ -61,6 +61,7 @@ Determine if the user needs:
 You MUST output your decision in valid JSON format ONLY, like this:
 {{
   "needs_flights": true,
+  "is_ultralow": false,
   "flight_query": "Find flights from NYC to DEN on 2026-05-10",
   "needs_hotels": true,
   "hotel_query": "Find 4-star hotels in Denver from 2026-05-10 to 2026-05-14",
@@ -68,6 +69,7 @@ You MUST output your decision in valid JSON format ONLY, like this:
   "activity_query": "Top things to do in Denver"
 }}
 If a component is not needed, set it to false and leave the query empty.
+If the user specifies "/ultralow", you MUST set "is_ultralow" to true.
 Do NOT output anything other than JSON."""),
     ("human", "{input}")
 ])
