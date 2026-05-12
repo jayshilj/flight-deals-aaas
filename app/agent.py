@@ -186,7 +186,7 @@ def run_trip_agent(query: str, provider: str = "Google", model_name: str = "gemi
             plan = json.loads(cleaned)
         except Exception:
             # Fallback if it didn't output pure JSON
-            plan = {"needs_flights": True, "flight_query": query, "needs_hotels": False, "needs_activities": False}
+            plan = {"needs_flights": True, "flight_query": query, "needs_hotels": False, "needs_activities": False, "is_ultralow": "/ultralow" in query.lower()}
             
         all_steps = []
         all_steps.append({
@@ -210,7 +210,8 @@ def run_trip_agent(query: str, provider: str = "Google", model_name: str = "gemi
 
             # 2. Flight Agent
             if plan.get("needs_flights") and flight_q:
-                flight_out, flight_steps, flight_time = run_sub_agent(llm, [search_flight_prices], FLIGHT_AGENT_PROMPT, flight_q, f"Flight Agent (Attempt {attempt+1})")
+                flight_tools = [search_ultralow_flights] if plan.get("is_ultralow") else [search_flight_prices]
+                flight_out, flight_steps, flight_time = run_sub_agent(llm, flight_tools, FLIGHT_AGENT_PROMPT, flight_q, f"Flight Agent (Attempt {attempt+1})")
                 timings["Flight Agent"] += flight_time
                 combined_responses.append("--- Flights ---\n" + flight_out)
                 all_steps.extend(flight_steps)
