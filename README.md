@@ -19,6 +19,7 @@ An AI-powered global travel assistant that plans your entire trip using natural 
   - **Anthropic** (Claude 3.5 Sonnet)
 - **Transparent Execution**: Expandable UI sections to view exact **Agent Data Citations & Tools** (grouped by attempt) and **Guardrail Verifier Checks**.
 - **Performance Metrics**: A dedicated "⏱️ Processing Times" expander breaks down the execution time in seconds for each sub-agent and the overall system.
+- **Ultra-Low Agency Deals**: Use the `/ultralow` command to find deep discounts from specialized travel agencies (e.g., Jetcost, Holidaybreakz) that are often lower than standard Google Flights prices.
 - **Responsive Modern UI**: Built with Streamlit, featuring a glassmorphism design and Markdown tables for clear, beautiful results.
 
 ---
@@ -72,6 +73,7 @@ streamlit run app/ui.py
 ## 💡 Example Queries
 - *"Find me a flight to Denver next Friday, a 4-star hotel, and a 2-day hiking itinerary."*
 - *"Cheapest flights from Austin to LA on April 15 with a budget hotel."*
+- *"/ultralow flights from Austin to NYC on June 10"* (Uses specialized agency sites)
 - *"Find me a trip to a tourist trap in Denver with the worst-rated hotels."* (Watch the Guardrail trigger a rework!)
 
 ---
