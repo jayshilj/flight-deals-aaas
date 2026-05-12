@@ -112,7 +112,7 @@ def search_ultralow_flights(origin: str, destination: str, departure_date: str) 
     """
     params = {
         "engine": "google",
-        "q": f"(site:us.jetcost.com OR site:www.holidaybreakz.com) cheap flights {origin} to {destination} {departure_date}",
+        "q": f"(site:us.jetcost.com OR site:www.holidaybreakz.com) best deals discount cheap flights {origin} to {destination} {departure_date}",
         "api_key": os.getenv("SERPAPI_API_KEY"),
         "num": 5
     }
