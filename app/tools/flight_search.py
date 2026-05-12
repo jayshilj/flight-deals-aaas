@@ -100,3 +100,48 @@ def search_flight_prices(origin: str, destination: str, departure_date: str,
         import traceback
         traceback.print_exc()
         return f"Unexpected error: {str(e)}"
+
+@tool
+def search_ultralow_flights(origin: str, destination: str, departure_date: str) -> str:
+    """
+    Search for ultra-low flight deals using specialized agency websites like Jetcost and Holidaybreakz.
+    Args:
+        origin: Departure location or airport code
+        destination: Arrival location or airport code
+        departure_date: Date in YYYY-MM-DD format
+    """
+    params = {
+        "engine": "google",
+        "q": f"(site:us.jetcost.com OR site:www.holidaybreakz.com) cheap flights {origin} to {destination} {departure_date}",
+        "api_key": os.getenv("SERPAPI_API_KEY"),
+        "num": 5
+    }
+
+    try:
+        search = GoogleSearch(params)
+        results = search.get_dict()
+
+        organic_results = results.get("organic_results", [])
+        if not organic_results:
+            return f"No ultra-low flight deals found from {origin} to {destination} on {departure_date} across agency sites. Try searching regular flights."
+
+        output_lines = [f"🚨 **Ultra-Low Agency Deals found for {origin} → {destination}**\n"]
+
+        for i, res in enumerate(organic_results, 1):
+            title = res.get("title", "Unknown Title")
+            snippet = res.get("snippet", "No description available.")
+            link = res.get("link", "#")
+            source = res.get("source", "Agency Website")
+            
+            output_lines.append(
+                f"{'─'*40}\n"
+                f"🏷️ **{title}** ({source})\n"
+                f"📝 {snippet}\n"
+                f"🔗 [View Deal]({link})"
+            )
+
+        return "\n".join(output_lines)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"Unexpected error: {str(e)}"
