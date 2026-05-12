@@ -13,7 +13,7 @@ from langchain_classic.agents import AgentExecutor, create_tool_calling_agent, c
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from app.tools.flight_search import search_flight_prices
+from app.tools.flight_search import search_flight_prices, search_ultralow_flights
 from app.tools.hotel_search import search_hotel_prices
 from app.tools.activity_search import search_local_activities
 
