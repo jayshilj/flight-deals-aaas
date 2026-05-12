@@ -211,6 +211,7 @@ def run_trip_agent(query: str, provider: str = "Google", model_name: str = "gemi
             # 2. Flight Agent
             if plan.get("needs_flights") and flight_q:
                 flight_tools = [search_ultralow_flights] if plan.get("is_ultralow") else [search_flight_prices]
+                print(f"DEBUG: Triggering Flight Agent with tools: {[t.name for t in flight_tools]}")
                 flight_out, flight_steps, flight_time = run_sub_agent(llm, flight_tools, FLIGHT_AGENT_PROMPT, flight_q, f"Flight Agent (Attempt {attempt+1})")
                 timings["Flight Agent"] += flight_time
                 combined_responses.append("--- Flights ---\n" + flight_out)
