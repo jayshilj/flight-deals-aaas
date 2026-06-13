@@ -1,0 +1,29 @@
+name: Daily Commit
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # Runs at 09:00 UTC (4:00 AM EST / 1:00 AM PST) every day
+  workflow_dispatch: # Allows manual trigger from the Actions tab in GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  daily-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update heartbeat file
+        run: |
+          mkdir -p data
+          echo "Automated daily commit on $(date)" > data/last_commit.txt
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/last_commit.txt
+          git commit -m "chore: automated daily commit" || exit 0
+          git push origin main
