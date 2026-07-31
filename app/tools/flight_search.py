@@ -78,7 +78,7 @@ def search_flight_prices(origin: str, destination: str, departure_date: str,
             if carbon_diff is not None:
                 carbon_note = f"🌿 {abs(carbon_diff)}% {'less' if carbon_diff < 0 else 'more'} emissions than typical\n"
 
-            arrival_note = "🛂 Airport Arrival: Arrive 2-3 hours before departure."
+            arrival_note = "🛂 Airport Arrival: Arrive 2 hours prior for domestic, 3 hours for international flights to comply with TSA."
 
             output_lines.append(
                 f"{'─'*40}\n"
