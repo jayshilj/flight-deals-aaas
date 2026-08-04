@@ -127,7 +127,10 @@ def search_ultralow_flights(origin: str, destination: str, departure_date: str) 
         if not organic_results:
             return f"No ultra-low flight deals found from {origin} to {destination} on {departure_date} across agency sites. Try searching regular flights."
 
-        output_lines = [f"🚨 **Ultra-Low Agency Deals found for {origin} → {destination}**\n"]
+        output_lines = [
+            f"🚨 **Ultra-Low Agency Deals found for {origin} → {destination}**\n",
+            "🛂 Airport Arrival: Arrive 2 hours prior for domestic, 3 hours for international flights to comply with TSA.\n"
+        ]
 
         for i, res in enumerate(organic_results, 1):
             title = res.get("title", "Unknown Title")
