@@ -125,7 +125,8 @@ with st.sidebar:
 • "Cheapest flights from Austin to LA on April 15"<br><br>
 • "Find me a flight to Denver next Friday, a 4-star hotel, and a 2-day itinerary"<br><br>
 • "✨ **NEW** ✨ /ultralow flights from AUS to NYC April 20"<br><br>
-• "Round trip AUS to NYC April 20 with hotel and top restaurants"
+• "Round trip AUS to NYC April 20 with hotel and top restaurants"<br><br>
+• "✈️ **NEW** ✈️ Includes TSA airport arrival time recommendations"
 </div>
 """, unsafe_allow_html=True)
 
